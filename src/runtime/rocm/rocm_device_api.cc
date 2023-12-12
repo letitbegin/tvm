@@ -23,7 +23,6 @@
  */
 #include <dmlc/thread_local.h>
 #include <hip/hip_runtime_api.h>
-#include <hsa/hsa.h>
 #include <tvm/runtime/device_api.h>
 #include <tvm/runtime/logging.h>
 #include <tvm/runtime/profiling.h>
@@ -41,14 +40,9 @@ class ROCMDeviceAPI final : public DeviceAPI {
     int value = 0;
     switch (kind) {
       case kExist: {
-        if (hsa_init() == HSA_STATUS_SUCCESS) {
-          int dev;
-          ROCM_CALL(hipGetDeviceCount(&dev));
-          value = dev > device.device_id ? 1 : 0;
-          hsa_shut_down();
-        } else {
-          value = 0;
-        }
+        int dev;
+        ROCM_CALL(hipGetDeviceCount(&dev));
+        value = dev > device.device_id ? 1 : 0;
         break;
       }
       case kMaxThreadsPerBlock: {
