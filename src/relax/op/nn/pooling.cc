@@ -245,5 +245,91 @@ TVM_REGISTER_OP("relax.nn.adaptive_avg_pool2d")
     .set_attr<TMixedPrecisionPolicy>("TMixedPrecisionPolicy", MixedPrecisionPolicyKind::kFollow)
     .set_attr<Bool>("FPurity", Bool(true));
 
+/* relax.nn.adaptive_avg_pool1d */
+TVM_REGISTER_NODE_TYPE(AdaptivePool1DAttrs);
+
+Expr adaptive_avg_pool1d(Expr data, Optional<Array<IntImm>> output_size, String layout,
+                         Optional<String> out_layout) {
+  ObjectPtr<AdaptivePool1DAttrs> attrs = make_object<AdaptivePool1DAttrs>();
+  attrs->layout = layout;
+  attrs->out_layout = out_layout.value_or(layout);
+  if (output_size.defined()) {
+    Array<IntImm> _output_size = output_size.value();
+    CHECK_EQ(_output_size.size(), 1)
+        << "The output_size length is expected to be 1. However, the given output_size is "
+        << _output_size;
+    attrs->output_size = std::move(_output_size);
+  }
+
+  static const Op& op = Op::Get("relax.nn.adaptive_avg_pool1d");
+  return Call(op, {std::move(data)}, Attrs(attrs), {});
+}
+
+TVM_REGISTER_GLOBAL("relax.op.nn.adaptive_avg_pool1d").set_body_typed(adaptive_avg_pool1d);
+
+StructInfo InferStructInfoAdaptiveAvgPool1D(const Call& call, const BlockBuilder& ctx) {
+  TensorStructInfo data_sinfo = GetUnaryInputTensorStructInfo(call, ctx);
+
+  const auto* attrs = call->attrs.as<AdaptivePool1DAttrs>();
+  auto [data_layout, data2NCW] = CheckTensorLayout(call, ctx, attrs->layout,  //
+                                                    /*tgt_layout=*/"NCW",     //
+                                                    /*tensor_name=*/"data");
+  auto [out_layout, out2NCW] = CheckTensorLayout(call, ctx, attrs->out_layout,  //
+                                                  /*tgt_layout=*/"NCW",         //
+                                                  /*tensor_name=*/"output");
+
+  Optional<ShapeExpr> data_shape =
+      CheckNdimPerLayoutAndGetShape(call, ctx, data_sinfo, data_layout);
+  if (!data_shape.defined()) {
+    if (data_sinfo->shape.defined() && attrs->out_layout == attrs->layout &&
+        !attrs->output_size.defined()) {
+      return data_sinfo;
+    } else {
+      if (data_sinfo->vdevice.defined()) {
+        return TensorStructInfo(data_sinfo->dtype, out_layout.ndim(), data_sinfo->vdevice.value());
+      }
+      return TensorStructInfo(data_sinfo->dtype, out_layout.ndim());
+    }
+  }
+
+  Array<PrimExpr> data_NCW_shape = data2NCW.ForwardShape(data_shape.value()->values);
+  Array<PrimExpr> out_NCW_shape(data_NCW_shape);
+  if (attrs->output_size.defined()) {
+    out_NCW_shape.Set(2, attrs->output_size.value()[0]);
+  }
+
+  Array<PrimExpr> out_shape = out2NCW.BackwardShape(out_NCW_shape);
+  if (data_sinfo->vdevice.defined()) {
+    return TensorStructInfo(ShapeExpr(out_shape), data_sinfo->dtype, data_sinfo->vdevice.value());
+  }
+  return TensorStructInfo(ShapeExpr(out_shape), data_sinfo->dtype);
+}
+
+InferLayoutOutput InferLayoutAdaptiveAvgPool1D(const Call& call,
+                                               const Map<String, Array<String>>& desired_layouts,
+                                               const VarLayoutMap& var_layout_map) {
+  ICHECK(NoDesiredLayout(call, desired_layouts));
+  const auto* tensor_sinfo = GetStructInfoAs<TensorStructInfoNode>(call);
+  ICHECK(tensor_sinfo != nullptr) << "Invalid Call";
+  ICHECK_EQ(tensor_sinfo->ndim, 3) << "Unsupported initial layout";
+  const auto* attrs = call->attrs.as<AdaptivePool1DAttrs>();
+  ICHECK(attrs) << "Invalid Call";
+
+  LayoutDecision layout = GetLayoutDecision(var_layout_map, call->args[0]);
+  ObjectPtr<AdaptivePool1DAttrs> new_attrs = make_object<AdaptivePool1DAttrs>(*attrs);
+  new_attrs->layout = TransposeLike(attrs->layout, InitialLayout(3), layout->layout).name();
+  new_attrs->out_layout = TransposeLike(attrs->out_layout, InitialLayout(3), layout->layout).name();
+  return InferLayoutOutput({layout}, {layout}, Attrs(new_attrs));
+}
+
+TVM_REGISTER_OP("relax.nn.adaptive_avg_pool1d")
+    .set_attrs_type<AdaptivePool1DAttrs>()
+    .set_num_inputs(1)
+    .add_argument("data", "Tensor", "The input tensor")
+    .set_attr<FInferStructInfo>("FInferStructInfo", InferStructInfoAdaptiveAvgPool1D)
+    .set_attr<FRelaxInferLayout>("FRelaxInferLayout", InferLayoutAdaptiveAvgPool1D)
+    .set_attr<TMixedPrecisionPolicy>("TMixedPrecisionPolicy", MixedPrecisionPolicyKind::kFollow)
+    .set_attr<Bool>("FPurity", Bool(true));
+
 }  // namespace relax
 }  // namespace tvm

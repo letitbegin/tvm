@@ -246,6 +246,33 @@ def _nn_avg_pool2d(bb: BlockBuilder, call: Call) -> Expr:
     )
 
 
+@register_legalize("relax.nn.adaptive_avg_pool1d")
+def _nn_adaptive_avg_pool1d(bb: BlockBuilder, call: Call) -> Expr:
+    if call.attrs.out_layout != call.attrs.layout:
+        logging.info(
+            "TOPI adaptive_avg_pool1d does not support different input-output "
+            "layouts, and thus cannot be legalized by TOPI"
+        )
+        return call
+
+    def te_adaptive_avg_pool1d(data, output_size, layout_str):
+        if output_size is None:
+            layout = tir.layout(layout_str)
+            idx_W = layout.index_of("W")
+            assert idx_W != -1
+            output_size = (data.shape[idx_W], )
+
+        return topi.nn.adaptive_pool1d(data, output_size, "avg", layout_str)
+
+    return bb.call_te(
+        te_adaptive_avg_pool1d,
+        call.args[0],
+        call.attrs.output_size,
+        call.attrs.layout,
+        primfunc_name_hint="adaptive_avg_pool1d",
+    )
+
+
 @register_legalize("relax.nn.adaptive_avg_pool2d")
 def _nn_adaptive_avg_pool2d(bb: BlockBuilder, call: Call) -> Expr:
     if call.attrs.out_layout != call.attrs.layout:

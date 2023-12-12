@@ -1492,7 +1492,10 @@ class GlobalAveragePool(OnnxOpConverter):
 
     @classmethod
     def _impl_v1(cls, bb, inputs, attr, params):
-        return relax.op.nn.adaptive_avg_pool2d(inputs[0], 1)
+        if len(inputs[0].struct_info.shape) == 4:
+            return relax.op.nn.adaptive_avg_pool2d(inputs[0], 1)
+        elif len(inputs[0].struct_info.shape) == 3:
+            return relax.op.nn.adaptive_avg_pool1d(inputs[0], 1)
 
 
 class Flatten(OnnxOpConverter):

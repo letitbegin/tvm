@@ -44,6 +44,10 @@ Expr avg_pool2d(Expr data, Array<IntImm> pool_size, Array<IntImm> strides, Array
 Expr adaptive_avg_pool2d(Expr data, Optional<Array<IntImm>> output_size, String layout,
                          Optional<String> out_layout);
 
+/*! \brief 1D adaptive average pooling operator. */
+Expr adaptive_avg_pool1d(Expr data, Optional<Array<IntImm>> output_size, String layout,
+                         Optional<String> out_layout);
+
 }  // namespace relax
 }  // namespace tvm
 

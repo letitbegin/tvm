@@ -246,6 +246,28 @@ struct Pool2DAttrs : public tvm::AttrsNode<Pool2DAttrs> {
   }
 };  // struct Pool2dAttrs
 
+/*! \brief Attributes for 1d adaptive pool operator */
+struct AdaptivePool1DAttrs : public tvm::AttrsNode<AdaptivePool1DAttrs> {
+  Optional<Array<IntImm>> output_size;
+  String layout;
+  String out_layout;
+
+  TVM_DECLARE_ATTRS(AdaptivePool1DAttrs, "relax.attrs.AdaptivePool1DAttrs") {
+    TVM_ATTR_FIELD(output_size).describe("Output width.");
+    TVM_ATTR_FIELD(layout).describe(
+        "Dimension ordering of input data. Can be 'NCW', 'NWC', etc."
+        "'N', 'C', 'W' stands for batch, channel, height, and width"
+        "dimensions respectively. Pooling is applied on the "
+        "'W' dimensions.");
+    TVM_ATTR_FIELD(out_layout)
+        .describe(
+            "Dimension ordering of output data. Can be 'NCW', 'NWC', etc."
+            "'N', 'C', 'W' stands for batch, channel, height, and width"
+            "dimensions respectively. Pooling is applied on the "
+            "'W' dimensions.");
+  }
+};  // struct AdaptivePool1DAttrs
+
 /*! \brief Attributes for 2d adaptive pool operator */
 struct AdaptivePool2DAttrs : public tvm::AttrsNode<AdaptivePool2DAttrs> {
   Optional<Array<IntImm>> output_size;

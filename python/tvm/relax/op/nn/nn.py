@@ -595,6 +595,56 @@ def avg_pool2d(
     )
 
 
+def adaptive_avg_pool1d(
+    data: Expr,
+    output_size: Optional[int] = None,
+    layout: str = "NCW",
+    out_layout: Optional[str] = None,
+) -> Expr:
+    r"""1D adaptive average pooling operator. This operator is experimental.
+
+    This operator takes data as input and does 1D average value calculation
+    across each window represented by WxH.
+
+
+    In the default case, where the data_layout is `NCW`
+    a data Tensor with shape `(batch_size, in_channels, width)`,
+    to produce an output Tensor with shape
+    (batch_size, in_channels, output_width).
+
+    The pooling kernel and stride sizes are automatically chosen for
+    desired output sizes.
+
+    For output_size:
+        If this argument is not provided, input height and width will be used
+        as output height and width.
+
+        If a integer is provided for output_size, the output size is
+        (N x C x output_size) for any input (NCW).
+
+    Parameters
+    ----------
+    data : relax.Expr
+        The input data to the operator.
+
+    output_size : Optional[int]
+        Output width.
+        If not specified, it will be the same as the input width.
+
+    layout : str
+        Layout of the input.
+
+    out_layout : Optional[str]
+        Layout of the output. If not specified, it is the same as data_layout
+
+    Returns
+    -------
+    result : relax.Expr
+        The computed result.
+    """
+    return _ffi_api.adaptive_avg_pool1d(data, (output_size, ), layout, out_layout)  # type: ignore
+
+
 def adaptive_avg_pool2d(
     data: Expr,
     output_size: Optional[Union[int, Tuple[int, int]]] = None,
