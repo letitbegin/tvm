@@ -116,22 +116,22 @@ class ThreadGroup {
 /*!
  * \brief Platform-agnostic no-op.
  */
-void Yield();
+TVM_DLL void Yield();
 /*!
  * \return the maximum number of effective workers for this system.
  */
-int MaxConcurrency();
+TVM_DLL int MaxConcurrency();
 /*!
  * \brief Setting the maximum number of available cores.
  */
-void SetMaxConcurrency(int value);
+TVM_DLL void SetMaxConcurrency(int value);
 /*!
  * \brief Reset the threads in the pool. All current threads are destroyed and
  * new ones are created.
  *
  * Note that this does nothing when openmp is used.
  */
-void ResetThreadPool();
+TVM_DLL void ResetThreadPool();
 
 /*!
  * \brief Configuring the CPU affinity mode for the working threads.
@@ -147,7 +147,7 @@ TVM_DLL void Configure(tvm::runtime::threading::ThreadGroup::AffinityMode mode, 
  * \brief Get the number of threads being used by the TVM runtime
  * \returns The number of threads used.
  */
-int32_t NumThreads();
+TVM_DLL int32_t NumThreads();
 
 }  // namespace threading
 
